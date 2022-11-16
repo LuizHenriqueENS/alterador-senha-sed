@@ -1,6 +1,7 @@
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
+using SeleniumExtras.WaitHelpers;
 using WebDriverManager;
 using WebDriverManager.DriverConfigs.Impl;
 using WebDriverManager.Helpers;
@@ -34,5 +35,9 @@ class Sessao
     }
 
 
+    public static void BlockUI(ChromeDriver driver){
+         WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(60.0)) { PollingInterval = TimeSpan.FromSeconds(5.0) };
 
+        wait.Until(ExpectedConditions.InvisibilityOfElementLocated(By.XPath("/html/body/div[4]")));
+    }
 }

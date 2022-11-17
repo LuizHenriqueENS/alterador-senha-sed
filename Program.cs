@@ -33,22 +33,58 @@ class Program
 
         var listaDeTiposDeEnsino = Sessao.Procurar(driver, Tipos.XPATH, "//*[@id='filt-tipoEnsino']");
         var tiposDeEnsinos = listaDeTiposDeEnsino.FindElements(By.TagName("option"));
-        int n = 1;
+        int nTipos = 1;
         foreach (var item in tiposDeEnsinos)
         {
             string tipo = item.GetAttribute("innerHTML");
             if (tipo != "SELECIONE...")
             {
-                System.Console.WriteLine($"[{n}] " + tipo);
-                n++;
+                System.Console.WriteLine($"[{nTipos}] " + tipo);
+                nTipos++;
             }
         }
         System.Console.Write("\nQual deseja alterar? ");
         int escolhaEnsino = int.Parse(Console.ReadLine());
 
         JSExecutor(driver, $"document.querySelector('#bs-select-6-{escolhaEnsino}').click();");
-        System.Console.WriteLine("Você selecionou " + tiposDeEnsinos[n - 1].GetAttribute("innerHTML"));
-        System.Console.WriteLine($"\nDeseja alterar a senha de: \n[1] Todas as turmas do {tiposDeEnsinos[n - 1].GetAttribute("innerHTML")} \n[2] Apenas UMA turma");
+        System.Console.WriteLine("Você selecionou " + tiposDeEnsinos[nTipos - 1].GetAttribute("innerHTML"));
+        System.Console.WriteLine($"\nDeseja alterar a senha de: \n[1] Todas as turmas do {tiposDeEnsinos[nTipos - 1].GetAttribute("innerHTML")} \n[2] Apenas UMA turma");
+        System.Console.Write("Opção: ");
+        int escolhaMetodo = int.Parse(Console.ReadLine());
+        System.Console.WriteLine("");
+
+        switch (escolhaMetodo)
+        {
+            case 1:
+            System.Console.WriteLine("Não implementado ainda!");
+            driver.Quit();
+                break;
+            case 2:
+                #region Mostrar Turmas
+                var listaDeTurmas = Sessao.Procurar(driver, Tipos.XPATH, "//*[@id='filt-turma']");
+                var turmas = listaDeTurmas.FindElements(By.TagName("option"));
+                int nTurmas = 1;
+                foreach (var item in turmas)
+                {
+                    string turma = item.GetAttribute("innerHTML");
+                    if (turma != "SELECIONE...")
+                    {
+                        System.Console.WriteLine($"[{nTurmas}] " + turma);
+                        nTurmas++;
+                    }
+                }
+                #endregion
+                System.Console.WriteLine("\nSelecione a turma que deseja alterar a senha: ");
+                int escolhaTurma = int.Parse(Console.ReadLine());
+                JSExecutor(driver, $"document.querySelector('#bs-select-7-{escolhaTurma}').click();");
+                JSExecutor(driver, $"document.querySelector('#btnPesquisar').click();");
+                var filtroTurma = Sessao.Procurar(driver, Tipos.XPATH, "//*[@id='tabelaDados_filter']/label/input");
+                filtroTurma.SendKeys("ativo");
+                Sessao.Procurar(driver, Tipos.XPATH, "//*[@id='tabelaDados_length']/label/select").Click();
+                Sessao.Procurar(driver, Tipos.XPATH, "//*[@id='tabelaDados_length']/label/select/option[4]").Click();
+               break;
+        }
+
     }
     #endregion
     #region LOGIN

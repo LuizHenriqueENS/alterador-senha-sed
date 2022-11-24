@@ -1,6 +1,7 @@
 ﻿using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using System.Linq;
+using System.Text;
 
 namespace AlteradorDeSenhaSED;
 class Program
@@ -47,17 +48,18 @@ class Program
         int escolhaEnsino = int.Parse(Console.ReadLine());
 
         JSExecutor(driver, $"document.querySelector('#bs-select-6-{escolhaEnsino}').click();");
-        System.Console.WriteLine("Você selecionou " + tiposDeEnsinos[nTipos - 1].GetAttribute("innerHTML"));
-        System.Console.WriteLine($"\nDeseja alterar a senha de: \n[1] Todas as turmas do {tiposDeEnsinos[nTipos - 1].GetAttribute("innerHTML")} \n[2] Apenas UMA turma");
-        System.Console.Write("Opção: ");
+        System.Console.WriteLine("------------");
+        System.Console.WriteLine("Você selecionou " + tiposDeEnsinos[escolhaEnsino].GetAttribute("innerHTML"));
+        System.Console.WriteLine($"\nDeseja alterar a senha de: \n[1] Todas as turmas do {tiposDeEnsinos[escolhaEnsino].GetAttribute("innerHTML")} \n[2] Apenas UMA turma");
+        System.Console.Write("\nOpção: ");
         int escolhaMetodo = int.Parse(Console.ReadLine());
         System.Console.WriteLine("");
 
         switch (escolhaMetodo)
         {
             case 1:
-            System.Console.WriteLine("Não implementado ainda!");
-            driver.Quit();
+                System.Console.WriteLine("Não implementado ainda!");
+                driver.Quit();
                 break;
             case 2:
                 #region Mostrar Turmas
@@ -74,7 +76,8 @@ class Program
                     }
                 }
                 #endregion
-                System.Console.WriteLine("\nSelecione a turma que deseja alterar a senha: ");
+
+                System.Console.Write("\nSelecione a turma que deseja alterar a senha: ");
                 int escolhaTurma = int.Parse(Console.ReadLine());
                 JSExecutor(driver, $"document.querySelector('#bs-select-7-{escolhaTurma}').click();");
                 JSExecutor(driver, $"document.querySelector('#btnPesquisar').click();");
@@ -82,7 +85,34 @@ class Program
                 filtroTurma.SendKeys("ativo");
                 Sessao.Procurar(driver, Tipos.XPATH, "//*[@id='tabelaDados_length']/label/select").Click();
                 Sessao.Procurar(driver, Tipos.XPATH, "//*[@id='tabelaDados_length']/label/select/option[4]").Click();
-               break;
+
+                Thread.Sleep(1500);
+
+                //pegar tabela
+                var csv = new StringBuilder();
+                var tabelaAlunos = Sessao.Procurar(driver, Tipos.XPATH, @"//*[@id='tabelaDados']/tbody");
+                var resetar = tabelaAlunos.FindElements(By.ClassName("colResetSenha"));
+                for (int i = 0; i < resetar.Count; i++)
+                {
+                    resetar[i].FindElement(By.TagName("a")).Click();
+                    Sessao.Procurar(driver, Tipos.XPATH, "/html/body/div[5]/section/div/div[2]/button[1]").Click();
+                    // RA e SENHA
+                    string SenhaERA = Sessao.Procurar(driver, Tipos.XPATH, "/html/body/div[5]/section/div/div[1]/div[2]").Text;
+                    string RAAlunos = SenhaERA.Substring(20, 16);
+                    string senhaAluno = SenhaERA.Substring(59, 7);
+                    
+                    // CRIAR ARQUIVO CSV COM RA E SENHAS
+                    var newLine = string.Format("{0},{1}", RAAlunos, senhaAluno);
+                    csv.AppendLine(newLine);
+
+                    Sessao.Procurar(driver, Tipos.XPATH, "/html/body/div[5]/section/div/div[2]/button").Click();
+                }
+
+                //after your loop
+                File.WriteAllText($@"C:\workspace\c-sharp\AlteradorDeSenhaSED\{turmas[escolhaTurma].GetAttribute("innerHTML")} - {DateTime.Now.ToString("HH-mm yyyy")}" + ".csv", csv.ToString());
+                
+                
+                break;
         }
 
     }

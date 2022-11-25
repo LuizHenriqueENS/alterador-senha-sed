@@ -9,19 +9,26 @@ using WebDriverManager.Helpers;
 class Sessao
 {
     // inicia e configura sessao do ChromeDriver
-    public static ChromeDriver IniciarSessao()
+    public static ChromeDriver IniciarSessao(string? arg1)
     {
 
         // baixa automaticamente a versão compatível do ChromeDrive para o pc
         new DriverManager().SetUpDriver(new ChromeConfig(), VersionResolveStrategy.MatchingBrowser);
-        ChromeDriver driver = new ChromeDriver();
+        ChromeOptions options = new();
+        options.AddArgument("silent");
+        if(arg1 != null){
+        options.AddArgument(arg1);
+        }
+        ChromeDriverService service = ChromeDriverService.CreateDefaultService();
+        service.HideCommandPromptWindow = true;
+        ChromeDriver driver = new ChromeDriver(service, options);
 
         return driver;
     }
     
     public static IWebElement Procurar(ChromeDriver driver, Tipos tipo, string caminho)
     {
-        WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(60.0)) { PollingInterval = TimeSpan.FromSeconds(5.0) };
+        WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(120.0)) { PollingInterval = TimeSpan.FromSeconds(3.0) };
 
         IWebElement? elemento = null;
 
@@ -36,7 +43,7 @@ class Sessao
 
 
     public static void BlockUI(ChromeDriver driver){
-         WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(60.0)) { PollingInterval = TimeSpan.FromSeconds(5.0) };
+         WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(120.0)) { PollingInterval = TimeSpan.FromSeconds(3.0) };
 
         wait.Until(ExpectedConditions.InvisibilityOfElementLocated(By.XPath("/html/body/div[4]")));
     }

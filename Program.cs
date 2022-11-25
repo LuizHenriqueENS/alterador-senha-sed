@@ -1,18 +1,18 @@
 ﻿using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
-using System.Linq;
-using System.Text;
+
 
 namespace AlteradorDeSenhaSED;
 class Program
 {
     static void Main(string[] args)
     {
-        ChromeDriver driver = Sessao.IniciarSessao();
+        ChromeDriver driver = Sessao.IniciarSessao(null);
 
         driver.Navigate().GoToUrl("https://sed.educacao.sp.gov.br");
         FazerLoginNoSED(driver);
         EscolherEnsino(driver);
+        driver.Quit();
     }
 
 
@@ -79,8 +79,12 @@ class Program
 
                 System.Console.Write("\nSelecione a turma que deseja alterar a senha: ");
                 int escolhaTurma = int.Parse(Console.ReadLine());
+
+                System.Console.WriteLine($"\nVocê selecionou: {turmas[escolhaTurma].GetAttribute("innerHTML")}");
+                System.Console.WriteLine("--------------\nAguarde enquanto o programa esta executando...");
                 JSExecutor(driver, $"document.querySelector('#bs-select-7-{escolhaTurma}').click();");
                 JSExecutor(driver, $"document.querySelector('#btnPesquisar').click();");
+
                 var filtroTurma = Sessao.Procurar(driver, Tipos.XPATH, "//*[@id='tabelaDados_filter']/label/input");
                 filtroTurma.SendKeys("ativo");
                 Sessao.Procurar(driver, Tipos.XPATH, "//*[@id='tabelaDados_length']/label/select").Click();
@@ -88,8 +92,10 @@ class Program
 
                 Thread.Sleep(1500);
 
+                List<string> alunos = new();
+                List<string> senhas = new();
+
                 //pegar tabela
-                var csv = new StringBuilder();
                 var tabelaAlunos = Sessao.Procurar(driver, Tipos.XPATH, @"//*[@id='tabelaDados']/tbody");
                 var resetar = tabelaAlunos.FindElements(By.ClassName("colResetSenha"));
                 for (int i = 0; i < resetar.Count; i++)
@@ -100,22 +106,58 @@ class Program
                     string SenhaERA = Sessao.Procurar(driver, Tipos.XPATH, "/html/body/div[5]/section/div/div[1]/div[2]").Text;
                     string RAAlunos = SenhaERA.Substring(20, 16);
                     string senhaAluno = SenhaERA.Substring(59, 7);
-                    
-                    // CRIAR ARQUIVO CSV COM RA E SENHAS
-                    var newLine = string.Format("{0},{1}", RAAlunos, senhaAluno);
-                    csv.AppendLine(newLine);
+                    alunos.Add(RAAlunos);
+                    senhas.Add(senhaAluno);
 
                     Sessao.Procurar(driver, Tipos.XPATH, "/html/body/div[5]/section/div/div[2]/button").Click();
                 }
 
-                //after your loop
-                File.WriteAllText($@"C:\workspace\c-sharp\AlteradorDeSenhaSED\{turmas[escolhaTurma].GetAttribute("innerHTML")} - {DateTime.Now.ToString("HH-mm yyyy")}" + ".csv", csv.ToString());
-                
-                
+                Console.Clear();
+                System.Console.WriteLine("Iniciando a alteração de senhas em massa");
+
+                for (int i = 0; i < alunos.Count; i++)
+                {
+                    ChromeDriver driverAluno = Sessao.IniciarSessao("headless");
+                    driverAluno.Navigate().GoToUrl("https://sed.educacao.sp.gov.br");
+
+                    var campoLogin = Sessao.Procurar(driverAluno, Tipos.XPATH, "//*[@id='name']");
+                    campoLogin.SendKeys(alunos[i]);
+                    var campoSenha = Sessao.Procurar(driverAluno, Tipos.XPATH, "//*[@id='senha']");
+                    campoSenha.SendKeys(senhas[i]);
+
+                    var botao = Sessao.Procurar(driverAluno, Tipos.XPATH, "//*[@id='botaoEntrar']");
+                    botao.Click();
+
+                    var botaoAvisoDaSenha = Sessao.Procurar(driverAluno, Tipos.XPATH, "/html/body/div[7]/section/div/div[2]/button");
+                    botaoAvisoDaSenha.Click();
+
+                    var alterarSenha = Sessao.Procurar(driverAluno, Tipos.XPATH, "//*[@id='Senha']");
+                    alterarSenha.SendKeys("12345678");
+                    var alterarConfirmarSenha = Sessao.Procurar(driverAluno, Tipos.XPATH, "//*[@id='conf_senha']");
+                    alterarConfirmarSenha.SendKeys("12345678");
+
+                    var botaoConfirmarNovaSenha = Sessao.Procurar(driverAluno, Tipos.XPATH, "//*[@id='formDefinirSenha']/div[4]/input");
+                    botaoConfirmarNovaSenha.Click();
+
+                    var botaoFechar = Sessao.Procurar(driverAluno, Tipos.XPATH, "/html/body/div[5]/section/div/div[2]/button");
+                    botaoFechar.Click();
+                    
+                    driverAluno.Quit();
+                    Console.Clear();
+                    System.Console.WriteLine("Iniciando a alteração de senhas em massa: ");
+                    System.Console.Write("Concluido: ");
+                    double porcentagemFeita = ((i +1 )* 100.0) / alunos.Count;
+                    System.Console.WriteLine(porcentagemFeita.ToString("F2") + "%");
+                }
+                Console.Clear();
+                System.Console.WriteLine("100.0% concluído");
+                System.Console.WriteLine("------------------------------------------");
+                System.Console.WriteLine("Senhas alteradas com sucesso!");
+                System.Console.WriteLine("FIM DO PROGRAMA!");
                 break;
         }
 
-    }
+    }   
     #endregion
     #region LOGIN
     private static void FazerLoginNoSED(ChromeDriver driver)
